@@ -6,6 +6,8 @@ mp_face_mesh = mp.solutions.face_mesh
 
 
 import numpy as np
+import os
+import platform
 
 
 class camera:
@@ -22,6 +24,9 @@ class camera:
         self.dir_vector = np.array([0.0,0.0,0.0])
         self.dir_state = 0
         self.mode = mode
+        self.face_loc = np.array([0.0,0.0,0.0])
+        self.eye = [0,0]
+        self.OS = platform.system()
         
     def camera_update(self):
         self.success, self.image = self.cap.read()
@@ -58,7 +63,7 @@ class camera:
                     connection_drawing_spec=mp_drawing_styles
                     .get_default_face_mesh_iris_connections_style())
                 # Flip the image horizontally for a selfie-view display.
-        cv2.imshow('MediaPipe FaceMesh', cv2.flip(self.image, 1))
+        cv2.imshow('MediaPipe Hands', cv2.flip(self.image, 1))
     
     def get_data(self):
         for face_landmarks in self.results.multi_face_landmarks:
@@ -81,6 +86,14 @@ class camera:
             print("origin result vector : ",result)
         return result / np.linalg.norm(result)
     
+    def calculate_face_loc(self,data):
+        return np.array([(data[143].x+data[199].x+data[272].x)/3,(data[143].z+data[199].z+data[272].z)/3,(data[143].y+data[199].y+data[272].y)/3])
+    
+    def check_eye(self,data):
+        eye_right = np.array([data[159].x,data[159].y,data[159].z]) - np.array([data[145].x,data[145].y,data[145].z])                          
+        eye_left = np.array([data[386].x,data[386].y,data[386].z]) - np.array([data[374].x,data[374].y,data[374].z])
+        return [np.linalg.norm(eye_left, 2),np.linalg.norm(eye_right, 2)]
+    
     def current_face_dir_state(self):
 #         7,8,9
 #         4,5,6       no face : -1
@@ -89,12 +102,12 @@ class camera:
             self.dir_state = -1
             return
         self.dir_state = 5
-        if(self.dir_vector[1] < -0.2):
+        if(self.dir_vector[1] < -0.22):
             self.dir_state += 3
-        elif(self.dir_vector[1] > 0.2):
+        elif(self.dir_vector[1] > 0.12):
             self.dir_state -= 3
         
-        if(self.dir_vector[0] < -0.4):
+        if(self.dir_vector[0] < -0.5):
             self.dir_state += 1
         elif(self.dir_vector[0] > 0.2):
             self.dir_state -= 1
@@ -103,7 +116,6 @@ class camera:
         res = ""
         if(self.dir_state == -1):
             return "no face"
-        
         if(self.dir_state == 5):
             return "front"
         
@@ -116,6 +128,21 @@ class camera:
             res += "up "
         elif(self.dir_state < 4):
             res += "down "
+        
+        
+        return res
+    
+    def current_eye_to_text(self):
+        res = ""
+        if(self.eye[0] < 0.018):
+            res += "cl "
+        else:
+            res += "op "
+        
+        if(self.eye[1] < 0.018):
+            res += "cl "
+        else:
+            res += "op "
         return res
         
         
@@ -131,7 +158,11 @@ class camera:
             self.get_face_mesh_data()
             
             self.draw_face_mesh_data()
-            
+
+            if(self.OS == "Windows"):
+                os.system('cls')
+            else:
+                os.system('clear')
             
             if(self.results.multi_face_landmarks == None):
                 self.dir_vector = np.array([0,0,0])
@@ -143,14 +174,20 @@ class camera:
             print(self.loop)
             data = self.get_data()
             self.dir_vector = self.calculate_face_dir_vector(data)
+            self.face_loc = self.calculate_face_loc(data)
+            self.eye = self.check_eye(data)
             self.current_face_dir_state()
 
             if(self.mode != "build"):
-                print("direction : ",self.dir_state," ",self.current_face_dir_to_text())
-                print(self.dir_vector)
+#                 print("direction : ",self.dir_state," ",self.current_face_dir_to_text())
+                print(self.current_face_dir_to_text())
+                print("dir vector "+str(self.dir_vector)+" ")
+                print("eye  "+self.current_eye_to_text()+str(self.eye))
+                print("face loc   "+str(self.face_loc))
                 
-            if(self.mode == "dev"):
-                print(self.dir_vector)
+
+                
+                
                 
             self.loop+=1
             if cv2.waitKey(5) & 0xFF == 27:
