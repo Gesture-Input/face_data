@@ -10,7 +10,7 @@ import os
 import platform
 
 
-class camera:
+class FaceCamera:
     def __init__(self, index, mode = "dev"):
         self.cap = cv2.VideoCapture(index)
         self.face_mesh = mp_face_mesh.FaceMesh(
@@ -27,10 +27,15 @@ class camera:
         self.face_loc = np.array([0.0,0.0,0.0])
         self.eye = [0,0]
         self.OS = platform.system()
+        # [up, down, left, right,  leftblink, rightblink]
+        self.params = [-0.22,0.12,-0.5,0.2,  0.018, 0.018]
         
     def camera_update(self):
         self.success, self.image = self.cap.read()
     
+    def set_params(self,data):
+        self.params = data
+
     def get_face_mesh_data(self):
         self.image.flags.writeable = False
         self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
@@ -63,7 +68,7 @@ class camera:
                     connection_drawing_spec=mp_drawing_styles
                     .get_default_face_mesh_iris_connections_style())
                 # Flip the image horizontally for a selfie-view display.
-        cv2.imshow('MediaPipe Hands', cv2.flip(self.image, 1))
+        cv2.imshow('MediaPipe Face Mesh', cv2.flip(self.image, 1))
     
     def get_data(self):
         for face_landmarks in self.results.multi_face_landmarks:
@@ -87,7 +92,8 @@ class camera:
         return result / np.linalg.norm(result)
     
     def calculate_face_loc(self,data):
-        return np.array([(data[143].x+data[199].x+data[272].x)/3,(data[143].z+data[199].z+data[272].z)/3,(data[143].y+data[199].y+data[272].y)/3])
+        return np.array([data[6].x,data[6].y,data[6].z])
+        # return np.array([(data[143].x+data[199].x+data[272].x)/3,(data[143].y+data[199].y+data[272].y)/3,(data[143].z+data[199].z+data[272].z)/3])
     
     def check_eye(self,data):
         eye_right = np.array([data[159].x,data[159].y,data[159].z]) - np.array([data[145].x,data[145].y,data[145].z])                          
@@ -102,14 +108,14 @@ class camera:
             self.dir_state = -1
             return
         self.dir_state = 5
-        if(self.dir_vector[1] < -0.22):
+        if(self.dir_vector[1] < self.params[0]):
             self.dir_state += 3
-        elif(self.dir_vector[1] > 0.12):
+        elif(self.dir_vector[1] > self.params[1]):
             self.dir_state -= 3
         
-        if(self.dir_vector[0] < -0.5):
+        if(self.dir_vector[0] < self.params[2]):
             self.dir_state += 1
-        elif(self.dir_vector[0] > 0.2):
+        elif(self.dir_vector[0] > self.params[3]):
             self.dir_state -= 1
     
     def current_face_dir_to_text(self):
@@ -134,12 +140,12 @@ class camera:
     
     def current_eye_to_text(self):
         res = ""
-        if(self.eye[0] < 0.018):
+        if(self.eye[0] < self.params[4]):
             res += "cl "
         else:
             res += "op "
         
-        if(self.eye[1] < 0.018):
+        if(self.eye[1] < self.params[5]):
             res += "cl "
         else:
             res += "op "
@@ -165,7 +171,7 @@ class camera:
                 os.system('clear')
             
             if(self.results.multi_face_landmarks == None):
-                self.dir_vector = np.array([0,0,0])
+                # self.dir_vector = np.array([0,0,0])
                 if(self.mode != "build"):
                     print("no face")
                 continue

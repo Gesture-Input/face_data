@@ -1,5 +1,7 @@
-from Modules import face
+from Modules import FaceCameraController
 
 # default : dev / only dir, build
-camera1 = face.camera(0, "only dir")
-camera1.run()
+controller = FaceCameraController.FaceCameraController("rpf511", 0, "only dir")
+controller.run_dev()
+# camera1 = FaceCamera.FaceCamera(0, "only dir")
+# camera1.run()
