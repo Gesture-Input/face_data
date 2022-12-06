@@ -34,8 +34,8 @@ class FaceCamera:
         # [up, down, left, right,  leftblink, rightblink]
         self.params = [-0.22,0.12,-0.5,0.2,  0.018, 0.018]
 
-        self.base_distance = 100.0
-        self.base_width = 100.0
+        self.base_distance = 50
+        self.base_width = 10.0
         self.frame_width = 640
         self.frame_height = 480
         self.focal_length = 100
