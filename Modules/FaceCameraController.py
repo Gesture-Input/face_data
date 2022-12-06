@@ -40,6 +40,9 @@ class FaceCameraController:
         if(self.console_page == 1):
             #camera distance init
             if(self.console_page_status == 1):
+                self.camera.get_focal_length()
+                self.console_page = 0
+                self.console_page_status = 0
                 return
         return
 
@@ -50,6 +53,8 @@ class FaceCameraController:
         print("eye  "+self.camera.current_eye_to_text() +
               str(self.camera.eye))
         print("face loc   "+str(self.camera.face_loc))
+        print("distance "+str(self.camera.distance)+" frame_width "+str(self.camera.mp_face_width)+" focal length "+str(self.camera.focal_length))
+        print("page "+str(self.console_page)+" status "+str(self.console_page_status))
         if(self.console_page == 0):
             print("0 : initialize camera | ")
             return
@@ -66,8 +71,9 @@ class FaceCameraController:
                 continue
             
             self.camera.get_face_mesh_data()
-            
+            self.camera.get_mp_face_width()
             self.camera.draw_face_mesh_data()
+            self.camera.calculate_distance()
 
             if(self.camera.OS == "Windows"):
                 os.system('cls')
@@ -88,6 +94,7 @@ class FaceCameraController:
             self.camera.current_face_dir_state()
 
             self.print_state()
+            self.handle_status()
 
             self.camera.loop += 1
             if(self.handle_input(cv2.waitKey(5)) == -1):

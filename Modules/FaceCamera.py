@@ -19,6 +19,9 @@ class FaceCamera:
             refine_landmarks=True,
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)     
+        self.mp_face = mp.solutions.face_detection.FaceDetection(
+            model_selection=1,
+            min_detection_confidence=0.5)
         self.success, self.image = self.cap.read()
         self.results = self.face_mesh.process(self.image)
         self.loop = 0
@@ -30,6 +33,15 @@ class FaceCamera:
         self.OS = platform.system()
         # [up, down, left, right,  leftblink, rightblink]
         self.params = [-0.22,0.12,-0.5,0.2,  0.018, 0.018]
+
+        self.base_distance = 100.0
+        self.base_width = 100.0
+        self.frame_width = 640
+        self.frame_height = 480
+        self.focal_length = 100
+
+        self.mp_face_width = -1
+        self.distance = 50
         
     def camera_update(self):
         self.success, self.image = self.cap.read()
@@ -101,11 +113,11 @@ class FaceCamera:
         eye_right = np.array([data[159].x,data[159].y,data[159].z]) - np.array([data[145].x,data[145].y,data[145].z])                          
         eye_left = np.array([data[386].x,data[386].y,data[386].z]) - np.array([data[374].x,data[374].y,data[374].z])
         return [np.linalg.norm(eye_left, 2),np.linalg.norm(eye_right, 2)]
-    
+ 
+    #         7,8,9
+    #         4,5,6       no face : -1
+    #         1,2,3
     def current_face_dir_state(self):
-#         7,8,9
-#         4,5,6       no face : -1
-#         1,2,3
         if(self.dir_vector[0] == 0 and self.dir_vector[1] == 0 and self.dir_vector[2] == 0):
             self.dir_state = -1
             return
@@ -153,7 +165,26 @@ class FaceCamera:
             res += "op "
         return res
         
+    def get_mp_face_width(self):
+        obj_width = -1
+        # img = cv2.resize(self.image,(640,480))
+        img = self.image
+        results = self.mp_face.process(img)
         
+        if results.detections:
+            for detection in results.detections:
+                bounding_box = detection.location_data.relative_bounding_box
+                x, y, w, h = int(bounding_box.xmin*self.frame_width), int(bounding_box.ymin*self.frame_height), int(bounding_box.width*self.frame_width),int(bounding_box.height*self.frame_height)
+                cv2.rectangle(img,(x,y),(x+w,y+h),(0,0,255),2)
+                obj_width=w
+        self.mp_face_width = obj_width
+        return
+    
+    def get_focal_length(self):
+        self.focal_length = (self.mp_face_width * self.base_distance) / self.base_width
+    
+    def calculate_distance(self):
+        self.distance = (self.base_width * self.focal_length)/self.mp_face_width
         
     def run(self):
         while self.cap.isOpened():
