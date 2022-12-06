@@ -40,6 +40,7 @@ class FaceCameraController:
         if(self.console_page == 1):
             #camera distance init
             if(self.console_page_status == 1):
+                
                 self.camera.get_focal_length()
                 self.console_page = 0
                 self.console_page_status = 0
