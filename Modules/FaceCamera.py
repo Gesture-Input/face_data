@@ -3,6 +3,7 @@ import mediapipe as mp
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 mp_face_mesh = mp.solutions.face_mesh
+# mp_face_geometry = mp.solutions.face_geometry
 
 
 import numpy as np
@@ -71,6 +72,7 @@ class FaceCamera:
         cv2.imshow('MediaPipe Face Mesh', cv2.flip(self.image, 1))
     
     def get_data(self):
+        # print (self.results.face_geometry)
         for face_landmarks in self.results.multi_face_landmarks:
             result = face_landmarks.landmark
         return result
@@ -91,7 +93,7 @@ class FaceCamera:
             print("origin result vector : ",result)
         return result / np.linalg.norm(result)
     
-    def calculate_face_loc(self,data):
+    def get_face_loc(self,data):
         return np.array([data[6].x,data[6].y,data[6].z])
         # return np.array([(data[143].x+data[199].x+data[272].x)/3,(data[143].y+data[199].y+data[272].y)/3,(data[143].z+data[199].z+data[272].z)/3])
     
@@ -180,23 +182,23 @@ class FaceCamera:
             print(self.loop)
             data = self.get_data()
             self.dir_vector = self.calculate_face_dir_vector(data)
-            self.face_loc = self.calculate_face_loc(data)
+            self.face_loc = self.get_face_loc(data)
             self.eye = self.check_eye(data)
             self.current_face_dir_state()
 
-            if(self.mode != "build"):
-#                 print("direction : ",self.dir_state," ",self.current_face_dir_to_text())
-                print(self.current_face_dir_to_text())
-                print("dir vector "+str(self.dir_vector)+" ")
-                print("eye  "+self.current_eye_to_text()+str(self.eye))
-                print("face loc   "+str(self.face_loc))
+#             if(self.mode != "build"):
+# #                 print("direction : ",self.dir_state," ",self.current_face_dir_to_text())
+#                 print(self.current_face_dir_to_text())
+#                 print("dir vector "+str(self.dir_vector)+" ")
+#                 print("eye  "+self.current_eye_to_text()+str(self.eye))
+#                 print("face loc   "+str(self.face_loc))
                 
 
                 
                 
                 
             self.loop+=1
-            if cv2.waitKey(5) & 0xFF == 27:
-                break
+            # if cv2.waitKey(5) & 0xFF == 27:
+            #     break
         
         self.release()
