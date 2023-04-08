@@ -23,6 +23,7 @@ class FaceCamera:
             model_selection=1,
             min_detection_confidence=0.5)
         self.success, self.image = self.cap.read()
+        self.face_detection = mp_face_detection.process(cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB))
         self.results = self.face_mesh.process(self.image)
         self.loop = 0
         self.dir_vector = np.array([0.0,0.0,0.0])
@@ -57,30 +58,32 @@ class FaceCamera:
     def draw_face_mesh_data(self):
         self.image.flags.writeable = True
         self.image = cv2.cvtColor(self.image, cv2.COLOR_RGB2BGR)
-        if self.results.multi_face_landmarks:
-            for face_landmarks in self.results.multi_face_landmarks:
-                mp_drawing.draw_landmarks(
-                    image=self.image,
-                    landmark_list=face_landmarks,
-                    connections=mp_face_mesh.FACEMESH_TESSELATION,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_drawing_styles
-                    .get_default_face_mesh_tesselation_style())
-                mp_drawing.draw_landmarks(
-                    image=self.image,
-                    landmark_list=face_landmarks,
-                    connections=mp_face_mesh.FACEMESH_CONTOURS,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_drawing_styles
-                    .get_default_face_mesh_contours_style())
-                mp_drawing.draw_landmarks(
-                    image=self.image,
-                    landmark_list=face_landmarks,
-                    connections=mp_face_mesh.FACEMESH_IRISES,
-                    landmark_drawing_spec=None,
-                    connection_drawing_spec=mp_drawing_styles
-                    .get_default_face_mesh_iris_connections_style())
-                # Flip the image horizontally for a selfie-view display.
+        self.face_detection = mp_face_detection.process(cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB))
+        if self.face_detection.detections:
+            if self.results.multi_face_landmarks:
+                for face_landmarks in self.results.multi_face_landmarks:
+                    mp_drawing.draw_landmarks(
+                        image=self.image,
+                        landmark_list=face_landmarks,
+                        connections=mp_face_mesh.FACEMESH_TESSELATION,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_drawing_styles
+                        .get_default_face_mesh_tesselation_style())
+                    mp_drawing.draw_landmarks(
+                        image=self.image,
+                        landmark_list=face_landmarks,
+                        connections=mp_face_mesh.FACEMESH_CONTOURS,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_drawing_styles
+                        .get_default_face_mesh_contours_style())
+                    mp_drawing.draw_landmarks(
+                        image=self.image,
+                        landmark_list=face_landmarks,
+                        connections=mp_face_mesh.FACEMESH_IRISES,
+                        landmark_drawing_spec=None,
+                        connection_drawing_spec=mp_drawing_styles
+                        .get_default_face_mesh_iris_connections_style())
+                    # Flip the image horizontally for a selfie-view display.
         cv2.imshow('MediaPipe Face Mesh', cv2.flip(self.image, 1))
     
     def get_data(self):
