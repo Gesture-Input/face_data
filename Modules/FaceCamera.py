@@ -20,7 +20,8 @@ class FaceCamera:
             min_detection_confidence=0.5,
             min_tracking_confidence=0.5)     
         self.success, self.image = self.cap.read()
-        self.results = self.face_mesh.process(self.image)
+        # self.results = self.face_mesh.process(self.image)
+        self.results = None
         self.loop = 0
         self.dir_vector = np.array([0.0,0.0,0.0])
         self.dir_state = 0
@@ -33,12 +34,14 @@ class FaceCamera:
         
     def camera_update(self):
         self.success, self.image = self.cap.read()
+        # if not self.success:
+            # self.image = cv2.flip(self.image, 1)
     
     def set_params(self,data):
         self.params = data
 
     def get_face_mesh_data(self):
-        self.image.flags.writeable = False
+        # self.image.flags.writeable = False
         self.image = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
         self.results = self.face_mesh.process(self.image)
     
@@ -69,7 +72,7 @@ class FaceCamera:
                     connection_drawing_spec=mp_drawing_styles
                     .get_default_face_mesh_iris_connections_style())
                 # Flip the image horizontally for a selfie-view display.
-        cv2.imshow('MediaPipe Face Mesh', cv2.flip(self.image, 1))
+        cv2.imshow('MediaPipe Face Mesh',self.image)
     
     def get_data(self):
         # print (self.results.face_geometry)
@@ -80,21 +83,38 @@ class FaceCamera:
     def release(self):
         self.cap.release()
     
+    def get_loc_cart(self,data):
+        return np.array([data[2], 0.5 - data[0], 0.5 - data[1]])
+
     def calculate_face_dir_vector(self,data):
-        # 143 : right eye end , 272 : left eye end , 199 : jaw end
-        if(self.mode == "dev"):
-            print("143 : ",[data[143].x,data[143].y,data[143].z]," 272: ",[data[272].x,data[272].y,data[272].z]," 199 : ",[data[199].x,data[199].y,data[199].z])
-        vector_a = np.array([data[199].x,data[199].y,data[199].z]) - np.array([data[143].x,data[143].y,data[143].z])                          
-        vector_b = np.array([data[272].x,data[272].y,data[272].z]) - np.array([data[199].x,data[199].y,data[199].z])
-        if(self.mode == "dev"):
-            print("vector a : ",vector_a," vector b : ",vector_b)
+        # 143, 130 : right eye end , 272, 359 : left eye end , 199 : jaw end
+        
+        right_eye_loc = self.get_loc_cart([data[130].x,data[130].y,data[130].z])
+        left_eye_loc = self.get_loc_cart([data[359].x,data[359].y,data[359].z])
+        mouth_loc = self.get_loc_cart([data[199].x,data[199].y,data[199].z])
+        # vector_a = np.array([data[199].x,data[199].y,data[199].z]) - np.array([data[130].x,data[130].y,data[130].z])                          
+        # vector_b = np.array([data[359].x,data[359].y,data[359].z]) - np.array([data[199].x,data[199].y,data[199].z])
+        vector_a = mouth_loc - right_eye_loc
+        vector_b = left_eye_loc - mouth_loc
+
         result = np.cross(vector_a,vector_b) 
         if(self.mode == "dev"):
+            print("168 : ",[data[168].x,data[168].y,data[168].z])
+            print("130 : ",[data[130].x,data[130].y,data[130].z]," 359: ",[data[359].x,data[359].y,data[359].z]," 199 : ",[data[199].x,data[199].y,data[199].z])
+            print("vector a : ",vector_a," vector b : ",vector_b)
             print("origin result vector : ",result)
+            
         return result / np.linalg.norm(result)
     
+    def get_loc_polar(self,data):
+        temp = self.get_loc_cart(data)
+        # cm / let distance is 50
+        print(temp)
+        return np.array([50, np.arctan(temp[1] / 1.166666667), 1.5708 - np.arctan(temp[2] / 1.25)])
+    
+
     def get_face_loc(self,data):
-        return np.array([data[6].x,data[6].y,data[6].z])
+        return np.array([data[168].x,data[168].y,data[168].z])
         # return np.array([(data[143].x+data[199].x+data[272].x)/3,(data[143].y+data[199].y+data[272].y)/3,(data[143].z+data[199].z+data[272].z)/3])
     
     def check_eye(self,data):

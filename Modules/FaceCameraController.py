@@ -49,7 +49,7 @@ class FaceCameraController:
         print("dir vector "+str(self.camera.dir_vector)+" ")
         print("eye  "+self.camera.current_eye_to_text() +
               str(self.camera.eye))
-        print("face loc   "+str(self.camera.face_loc))
+        print("face loc polar   "+str(self.camera.face_loc))
         if(self.console_page == 0):
             print("0 : initialize camera | ")
             return
@@ -73,19 +73,20 @@ class FaceCameraController:
                 os.system('cls')
             else:
                 os.system('clear')
-
-            if (self.camera.results.multi_face_landmarks == None):
-                # self.camera.dir_vector = np.array([0,0,0])
-                if (self.camera.mode != "build"):
-                    print("no face")
-                continue
-
-            # print(self.camera.loop)
-            data = self.camera.get_data()
-            self.camera.dir_vector = self.camera.calculate_face_dir_vector(data)
-            self.camera.face_loc = self.camera.get_face_loc(data)
-            self.camera.eye = self.camera.check_eye(data)
-            self.camera.current_face_dir_state()
+            # print(self.camera.results.detection)
+            # if (self.camera.results.multi_face_landmarks == None):
+            #     # self.camera.dir_vector = np.array([0,0,0])
+            #     if (self.camera.mode != "build"):
+            #         print("no face")
+            #     continue
+            if self.camera.results.multi_face_landmarks:
+                
+                print(self.camera.loop)
+                data = self.camera.get_data()
+                self.camera.dir_vector = self.camera.calculate_face_dir_vector(data)
+                self.camera.face_loc = self.camera.get_loc_polar(self.camera.get_face_loc(data))
+                self.camera.eye = self.camera.check_eye(data)
+                self.camera.current_face_dir_state()
 
             self.print_state()
 
